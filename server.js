@@ -7,11 +7,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Rota de teste
+app.get("/", (req, res) => {
+  res.send("✅ Backend está rodando!");
+});
+
 // Conexão com MongoDB Atlas
 mongoose
-  .connect(
-    "mongodb+srv://portaldoparceiro:Jesusm12@cluster0.xxhy479.mongodb.net/usuarios"
-  )
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Conectado ao MongoDB Atlas"))
   .catch((err) => console.error("❌ Erro ao conectar ao MongoDB:", err));
 
@@ -32,7 +35,6 @@ const Usuario = mongoose.model("Usuario", usuarioSchema);
 
 // Rota de cadastro
 app.post("/api/cadastro", async (req, res) => {
-  console.log("🔎 Body recebido:", req.body);
   const { nome, usuario, centralizadoraresp, email, senha } = req.body;
 
   try {
@@ -51,10 +53,8 @@ app.post("/api/cadastro", async (req, res) => {
     });
 
     await novoUsuario.save();
-    console.log("✅ Usuário salvo:", novoUsuario);
     res.status(201).json({ message: "Usuário cadastrado com sucesso!" });
   } catch (err) {
-    console.error("❌ Erro no cadastro:", err.message);
     res
       .status(500)
       .json({ message: "Erro ao cadastrar.", detalhe: err.message });
@@ -76,15 +76,12 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ message: "Senha incorreta." });
     }
 
-    console.log("✅ Login bem-sucedido:", usuarioEncontrado.usuario);
-    res
-      .status(200)
-      .json({
-        message: "Login realizado com sucesso!",
-        usuario: usuarioEncontrado,
-      });
+    const { senha: _, ...usuarioSemSenha } = usuarioEncontrado.toObject();
+    res.status(200).json({
+      message: "Login realizado com sucesso!",
+      usuario: usuarioSemSenha,
+    });
   } catch (err) {
-    console.error("❌ Erro no login:", err.message);
     res
       .status(500)
       .json({ message: "Erro ao realizar login.", detalhe: err.message });
@@ -92,5 +89,7 @@ app.post("/api/login", async (req, res) => {
 });
 
 // Inicializa o servidor
-const PORT = 5000;
-app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () =>
+  console.log(`🚀 Servidor rodando na porta ${PORT}`)
+);
